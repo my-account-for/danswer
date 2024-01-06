@@ -498,271 +498,370 @@ def Multi_Note_maker(uploaded_file, model_option, t_list, api_key, prompt_option
     # Return the final notes for all uploaded files.
     return Notes_Final_Final
 
+# Function for generating custom notes for multiple uploaded files using OpenAI GPT based on user input and parameters.
 def Multi_Custom_Note_maker(uploaded_file, model_option, full_text, api_key, topics_input_list, prompt_option, prompt_area_text):
-	client = openai.OpenAI(api_key=api_key)
-	Notes_Final_Final = '' 
-	
-	topics = topics_input_list
+    # Initialize OpenAI API client with the provided API key.
+    client = openai.OpenAI(api_key=api_key)
+    
+    # Initialize an empty string to store the final custom notes.
+    Notes_Final_Final = '' 
+    
+    # Extract topics from the user-provided list.
+    topics = topics_input_list
 
-	if prompt_option=="Use default prompt":
-		actual_prompt = "Generate detailed call notes of the conversation for an investment firm only under this topic-{'<topic>'}. Do not create any subtopics under the topics. Generate notes pointwise under only that topic, (Convert all text numbers to numbers)"
-	elif prompt_option=="Use customized prompt":
-		actual_prompt = prompt_area_text
+    # Determine the actual prompt based on user's choice.
+    if prompt_option == "Use default prompt":
+        actual_prompt = "Generate detailed call notes of the conversation for an investment firm only under this topic-{'<topic>'}. Do not create any subtopics under the topics. Generate notes pointwise under only that topic, (Convert all text numbers to numbers)"
+    elif prompt_option == "Use customized prompt":
+        actual_prompt = prompt_area_text
 
-	for i in range(len(topics)):
-		st.write(f"[Custom Input Note Making {i+1}/{len(topics)}] Progress update:",'\n')
-		Notes_Final_Final = Notes_Final_Final + "     " + topics[i] + ':\n'
+    # Loop through each topic in the list.
+    for i in range(len(topics)):
+        st.write(f"[Custom Input Note Making {i+1}/{len(topics)}] Progress update:",'\n')
+        
+        # Append the current topic to the final string.
+        Notes_Final_Final = Notes_Final_Final + "     " + topics[i] + ':\n'
 
-		for j in range(len(full_text)):   
-			st.write(j+1,'/',len(full_text),'\n')
-			message_list = [
-				{
-				"role": "system",
-				"content": actual_prompt.replace('<topic>', topics[i])
-				},
-				{
-				"role": "user",
-				"content": 'Notes: \n'+full_text[j]
-				}
-			]
+        # Loop through each uploaded file's content.
+        for j in range(len(full_text)):   
+            st.write(j+1,'/',len(full_text),'\n')
+            
+            # Initialize a list of messages with system and user prompts for the current topic and file content.
+            message_list = [
+                {
+                "role": "system",
+                "content": actual_prompt.replace('<topic>', topics[i])
+                },
+                {
+                "role": "user",
+                "content": 'Notes: \n'+full_text[j]
+                }
+            ]
 
-			response = client.chat.completions.create(
-			model='gpt-4-1106-preview',
-			messages=message_list,
-			temperature=temperature_input_GPT_value,
-			max_tokens=4096,
-			top_p=top_p_input_GPT_value,
-			frequency_penalty=frequency_penalty_GPT_value,
-			presence_penalty=presence_penalty_GPT_value
-			)
-			
-			Notes_Final_Final = Notes_Final_Final + "         " + uploaded_file[j].name + ":\n"
-			Notes_Final_Final = Notes_Final_Final + response.choices[0].message.content + "\n\n"
-		Notes_Final_Final = Notes_Final_Final + "\n\n\n\n"
+            # Create GPT completions for the current topic and file content.
+            response = client.chat.completions.create(
+                model='gpt-4-1106-preview',
+                messages=message_list,
+                temperature=temperature_input_GPT_value,
+                max_tokens=4096,
+                top_p=top_p_input_GPT_value,
+                frequency_penalty=frequency_penalty_GPT_value,
+                presence_penalty=presence_penalty_GPT_value
+            )
+            
+            # Append the file name and GPT response content to the final string.
+            Notes_Final_Final = Notes_Final_Final + "         " + uploaded_file[j].name + ":\n"
+            Notes_Final_Final = Notes_Final_Final + response.choices[0].message.content + "\n\n"
+        
+        # Add extra line breaks to separate each topic's notes.
+        Notes_Final_Final = Notes_Final_Final + "\n\n\n\n"
 
-	return Notes_Final_Final
+    # Return the final custom notes.
+    return Notes_Final_Final
 
+# Function for processing uploaded PDF files.
 def pdf_processor(uploaded_file, max_len):
-	full_text = ["" for k in range(len(uploaded_file))]
-	
-	for i in range(len(uploaded_file)):
-		reader = PyPDF2.PdfReader(uploaded_file[i])
-				
-		for j in range(len(reader.pages)):    
-			p = reader.pages[j]
-			t = p.extract_text()
-				
-			full_text[i] = full_text[i] + "\n" + t
-	
-	Transcript_final = full_text
-	
-	t_list = [[] for k in range(len(Transcript_final))]
-	
-	words_per_segment = max_len
-	for j in range(len(Transcript_final)):
-		words = Transcript_final[j].split()
-		
-		for i in range(0, len(words), words_per_segment):
-			segment = " ".join(words[i:i + words_per_segment])
-			t_list[j].append(segment)
+    # Initialize a list to store the full text for each uploaded PDF file.
+    full_text = ["" for k in range(len(uploaded_file))]
+    
+    # Loop through each uploaded PDF file.
+    for i in range(len(uploaded_file)):
+        # Read the content of each page in the PDF file and concatenate it.
+        reader = PyPDF2.PdfReader(uploaded_file[i])
+        for j in range(len(reader.pages)):
+            p = reader.pages[j]
+            t = p.extract_text()
+            full_text[i] = full_text[i] + "\n" + t
+    
+    # Store the full text in Transcript_final variable.
+    Transcript_final = full_text
+    
+    # Initialize a list to store segmented text for each file.
+    t_list = [[] for k in range(len(Transcript_final))]
+    
+    # Determine the number of words per segment based on the specified max_len.
+    words_per_segment = max_len
+    
+    # Loop through each file's transcript and segment the text.
+    for j in range(len(Transcript_final)):
+        words = Transcript_final[j].split()
+        
+        for i in range(0, len(words), words_per_segment):
+            segment = " ".join(words[i:i + words_per_segment])
+            t_list[j].append(segment)
+    
+    # Return the segmented text and full text.
+    return t_list, full_text
 
-	return t_list, full_text
-
+# Function for processing uploaded audio files using the Whisper model.
 def audio_processor_whisper(uploaded_file, max_len, string_transcript_audio, language_input_value, prompt_input_value, temperature_input_value):
-	audio = pydub.AudioSegment.from_file(uploaded_file)
-	total_duration = len(audio)
-	chunk_length_ms = 60000
-	num_chunks = total_duration // chunk_length_ms
-	
-	client = openai.OpenAI(api_key=st.secrets["openai_key"])
-	st.write('[Transcription] Progress update:','\n')
-	for i in range(num_chunks):
-		st.write(i+1,'/',num_chunks,'\n')
-		start_time = i * chunk_length_ms
-		end_time = (i + 1) * chunk_length_ms
-	
-		if end_time > total_duration:
-			end_time = total_duration
-	
-		chunk = audio[start_time:end_time]
-		chunk.export(str(i)+".mp3", format="mp3")
-	
-		with open(str(i)+".mp3",'rb') as audio_file:
-			transcript = client.audio.transcriptions.create(
-					  model="whisper-1", 
-					  file=audio_file, 
-					  response_format="text",
-					  language=language_input_value,
-					  prompt=prompt_input_value,
-					  temperature=temperature_input_value
-					)
-			string_transcript_audio = string_transcript_audio + transcript + ' '
-	st.write('Transcription Done!','\n')
-	Transcript_final = string_transcript_audio
-	
-	t_list = []
-	
-	words_per_segment = max_len
-	words = Transcript_final.split()
-	
-	for i in range(0, len(words), words_per_segment):
-		segment = " ".join(words[i:i + words_per_segment])
-		t_list.append(segment)
+    # Load the audio file from the uploaded file.
+    audio = pydub.AudioSegment.from_file(uploaded_file)
+    
+    # Calculate the total duration of the audio.
+    total_duration = len(audio)
+    
+    # Define the chunk length in milliseconds.
+    chunk_length_ms = 60000
+    
+    # Calculate the number of chunks needed for the entire audio file.
+    num_chunks = total_duration // chunk_length_ms
+    
+    # Initialize OpenAI API client with the provided API key.
+    client = openai.OpenAI(api_key=st.secrets["openai_key"])
+    
+    # Display progress update for transcription in the Streamlit app.
+    st.write('[Transcription] Progress update:','\n')
+    
+    # Loop through each chunk of the audio file for transcription.
+    for i in range(num_chunks):
+        st.write(i+1,'/',num_chunks,'\n')
+        
+        # Define the start and end time for the current chunk.
+        start_time = i * chunk_length_ms
+        end_time = (i + 1) * chunk_length_ms
+        
+        # Adjust the end time if it exceeds the total duration.
+        if end_time > total_duration:
+            end_time = total_duration
+        
+        # Extract the current chunk of audio.
+        chunk = audio[start_time:end_time]
+        
+        # Export the chunk to an MP3 file for transcription.
+        chunk.export(str(i)+".mp3", format="mp3")
+        
+        # Read the exported audio file and perform transcription.
+        with open(str(i)+".mp3",'rb') as audio_file:
+            transcript = client.audio.transcriptions.create(
+                model="whisper-1", 
+                file=audio_file, 
+                response_format="text",
+                language=language_input_value,
+                prompt=prompt_input_value,
+                temperature=temperature_input_value
+            )
+            # Concatenate the transcription to the existing string_transcript_audio.
+            string_transcript_audio = string_transcript_audio + transcript + ' '
+    
+    # Display completion message for transcription in the Streamlit app.
+    st.write('Transcription Done!','\n')
+    
+    # Store the final transcription in Transcript_final variable.
+    Transcript_final = string_transcript_audio
+    
+    # Initialize a list to store segmented text.
+    t_list = []
+    
+    # Determine the number of words per segment based on the specified max_len.
+    words_per_segment = max_len
+    words = Transcript_final.split()
+    
+    # Segment the entire transcription.
+    for i in range(0, len(words), words_per_segment):
+        segment = " ".join(words[i:i + words_per_segment])
+        t_list.append(segment)
+    
+    # Return the segmented text and full transcription.
+    return t_list, string_transcript_audio
 
-	return t_list, string_transcript_audio
-
+# Function to extract the file ID from a Google Drive link and generate a download link.
 def convert_extract_file_id(gdrive_link):
+    # Use regular expression to find the file ID from the Google Drive link.
     match = re.search(r"/d/(\S+?)/", gdrive_link)
     if match:
         file_id = match.group(1)
     else:
-        pass
+        pass  # Do nothing if the regex match is not found.
 
+    # Generate a download link using the extracted file ID.
     download_link = f"https://drive.google.com/uc?export=download&id={file_id}"
     
     return download_link
 
+# Function for processing audio files using the Audiogest API.
 def audio_processor_audiogest(link_input_value, max_len, string_transcript_audio, language_input_value, prompt_input_value, num_speakers_input_value, wait_time_input_value):
-	audiogest_key = st.secrets["audiogest_key"]
+    # Retrieve Audiogest API key from Streamlit secrets.
+    audiogest_key = st.secrets["audiogest_key"]
 
-	transcribe_endpoint = "https://audiogest.app/api/transcripts"
+    # Define Audiogest API endpoints and headers.
+    transcribe_endpoint = "https://audiogest.app/api/transcripts"
+    headers = {
+        "Content-type": "application/json",
+        "Authorization": f"Bearer {audiogest_key}",
+    }
 
-	headers = {
-		"Content-type": "application/json",
-		"Authorization": f"Bearer {audiogest_key}",
-		
-	}
+    # Convert Google Drive link to a direct download link.
+    link_transcribe = convert_extract_file_id(link_input_value)
 
-	link_transcribe = convert_extract_file_id(link_input_value)
+    # Create the request body for Audiogest transcription.
+    body = {
+        "url": link_transcribe,
+        "name": "file.mp3", 
+        "numSpeakers": num_speakers_input_value,
+        "language": language_input_value,
+        "vocabulary": prompt_input_value
+    }
 
-	body = {
-		"url": link_transcribe,
-		"name": "file.mp3", 
-		"numSpeakers": num_speakers_input_value,
-		"language": language_input_value,
-		"vocabulary": prompt_input_value
-	}
+    try:
+        # Make a POST request to initiate the Audiogest transcription process.
+        response = requests.post(transcribe_endpoint, headers=headers, data=json.dumps(body))
 
+        # Check if the request was successful (status code 200).
+        if response.status_code == 200:
+            data = response.json()
+            Transcript_ID = data.get("transcriptId", "Not available")
+            st.write('Audiogest transcribing process started','\n')
+        else:
+            st.write('Audiogest error','\n')
 
-	try:
-		response = requests.post(transcribe_endpoint, headers=headers, data=json.dumps(body))
+    except requests.RequestException as e:
+        st.write('Audiogest error','\n')
 
-		if response.status_code == 200:
-			data = response.json()
-			Transcript_ID = data.get("transcriptId", "Not available")
-			st.write('Audiogest transcribing process started','\n')
-		else:
-			st.write('Audiogest error','\n')
+    # Wait for the specified duration to simulate the transcription process.
+    progress_text = f"Transcription in progress. Please wait for {wait_time_input_value} minutes."
+    my_bar = st.progress(0, text=progress_text)
+    for percent_complete in range(100):
+        time.sleep((wait_time_input_value*60)/100)
+        my_bar.progress(percent_complete + 1, text=progress_text)
+    time.sleep(1)
+    my_bar.empty()
 
-	except requests.RequestException as e:
-		st.write('Audiogest error','\n')
+    # Retrieve the transcription results after the waiting period.
+    transcriptId = Transcript_ID
+    transcript_endpoint = f"https://audiogest.app/api/transcripts/{transcriptId}"
 
-	#wait time
-	progress_text = f"Transcription in progress. Please wait for {wait_time_input_value} minutes."
-	my_bar = st.progress(0, text=progress_text)
+    try:
+        # Make a GET request to retrieve the transcription results.
+        response = requests.get(transcript_endpoint, headers=headers)
 
-	for percent_complete in range(100):
-		time.sleep((wait_time_input_value*60)/100)
-		my_bar.progress(percent_complete + 1, text=progress_text)
-	time.sleep(1)
-	my_bar.empty()
+        # Check if the request was successful (status code 200).
+        if response.status_code == 200:
+            transcript_data = response.json()
+            st.write('Transcription process done!','\n')
+        else:
+            st.write('Audiogest error','\n')
 
-	#retrieval
-	transcriptId = Transcript_ID
+    except requests.RequestException as e:
+        st.write('Audiogest error','\n')
 
-	transcript_endpoint = f"https://audiogest.app/api/transcripts/{transcriptId}"
+    # Process and format the retrieved transcription data.
+    for i in range(len(transcript_data['segments'])):
+        string_transcript_audio = string_transcript_audio + '<'+ transcript_data['segments'][i]['speaker'] +'>' + ': \n' + transcript_data['segments'][i]['text'] + "\n\n"
 
-	headers = {
-		"Content-type": "application/json",
-		"Authorization": f"Bearer {audiogest_key}",
-	}
+    # Store the final transcription in Transcript_final variable.
+    Transcript_final = string_transcript_audio
+    
+    # Initialize a list to store segmented text.
+    t_list = []
+    
+    # Determine the number of words per segment based on the specified max_len.
+    words_per_segment = max_len
+    words = Transcript_final.split()
+    
+    # Segment the entire transcription.
+    for i in range(0, len(words), words_per_segment):
+        segment = " ".join(words[i:i + words_per_segment])
+        t_list.append(segment)
+    
+    # Return the segmented text and full transcription.
+    return t_list, string_transcript_audio
 
-	try:
-		response = requests.get(transcript_endpoint, headers=headers)
-
-		if response.status_code == 200:
-			transcript_data = response.json()
-			st.write('Transcription process done!','\n')
-		else:
-			st.write('Audiogest error','\n')
-
-	except requests.RequestException as e:
-		st.write('Audiogest error','\n')
-
-	for i in range(len(transcript_data['segments'])):
-		string_transcript_audio = string_transcript_audio + '<'+ transcript_data['segments'][i]['speaker'] +'>' + ': \n' + transcript_data['segments'][i]['text'] + "\n\n"
-
-	Transcript_final = string_transcript_audio
-	
-	t_list = []
-	
-	words_per_segment = max_len
-	words = Transcript_final.split()
-	
-	for i in range(0, len(words), words_per_segment):
-		segment = " ".join(words[i:i + words_per_segment])
-		t_list.append(segment)
-
-	return t_list, string_transcript_audio
-
+# Check if the chosen source type is 'pdf'.
 if file_type == 'pdf':
-	if uploaded_file is not None and len(uploaded_file)==1:
+    # Check if a single PDF file is uploaded.
+    if uploaded_file is not None and len(uploaded_file) == 1:
+        # Process the single PDF file and extract text.
+        t_list, full_text = pdf_processor(uploaded_file, max_len)
+        
+        # Check the selected operation option for note-making.
+        if operation_option == "General Note Making":
+            # Generate notes using the single PDF file.
+            Notes_final_ans = Note_maker(model_option, t_list[0], st.secrets["openai_key"], prompt_option, prompt_area_text, context_file_contents)
+        elif operation_option == "Custom Topic Input":
+            # Generate notes for each topic using the single PDF file.
+            Notes_final_ans = Multi_Custom_Note_maker(uploaded_file, model_option, full_text, st.secrets["openai_key"], topics_input_list, prompt_option, prompt_area_text)
 
-		t_list, full_text = pdf_processor(uploaded_file, max_len)
-		
-		if operation_option == "General Note Making":
-			Notes_final_ans = Note_maker(model_option, t_list[0], st.secrets["openai_key"], prompt_option, prompt_area_text, context_file_contents)
-		elif operation_option == "Custom Topic Input":
-			Notes_final_ans = Multi_Custom_Note_maker(uploaded_file, model_option, full_text, st.secrets["openai_key"], topics_input_list, prompt_option, prompt_area_text)
+        # Set the desired file name for downloading.
+        file_actual_name = file_title + '.txt'
+        # Create a download button for the generated call notes.
+        st.download_button('Download Call Notes', Notes_final_ans, file_name=file_actual_name, type="primary")
+        # Stop the execution to avoid further display of Streamlit app content.
+        st.stop()
 
-		file_actual_name = file_title + '.txt'
-		st.download_button('Download Call Notes', Notes_final_ans, file_name=file_actual_name, type="primary")
-		st.stop()
+    # Check if multiple PDF files are uploaded.
+    if uploaded_file is not None and len(uploaded_file) > 1:
+        # Process the multiple PDF files and extract text.
+        t_list, full_text = pdf_processor(uploaded_file, max_len)
+        
+        # Check the selected operation option for note-making.
+        if operation_option == "General Note Making":
+            # Generate combined notes using multiple PDF files.
+            Notes_final_ans = Multi_Note_maker(uploaded_file, model_option, t_list, st.secrets["openai_key"], prompt_option, prompt_area_text, context_file_contents)
+        elif operation_option == "Custom Topic Input":
+            # Generate notes for each topic using multiple PDF files.
+            Notes_final_ans = Multi_Custom_Note_maker(uploaded_file, model_option, full_text, st.secrets["openai_key"], topics_input_list, prompt_option, prompt_area_text)
 
-	if uploaded_file is not None and len(uploaded_file)>1:
+        # Set the desired file name for downloading.
+        file_actual_name = file_title + '.txt'
+        # Create a download button for the generated call notes.
+        st.download_button('Download Call Notes', Notes_final_ans, file_name=file_actual_name, type="primary")
+        # Stop the execution to avoid further display of Streamlit app content.
+        st.stop()
+# Initialize an empty string for storing the audio transcript.
+string_transcript_audio = ''
 
-		t_list, full_text = pdf_processor(uploaded_file, max_len)
-		
-		if operation_option == "General Note Making":
-			Notes_final_ans = Multi_Note_maker(uploaded_file, model_option, t_list, st.secrets["openai_key"], prompt_option, prompt_area_text, context_file_contents)
-		elif operation_option == "Custom Topic Input":
-			Notes_final_ans = Multi_Custom_Note_maker(uploaded_file, model_option, full_text, st.secrets["openai_key"], topics_input_list, prompt_option, prompt_area_text)
-
-		file_actual_name = file_title + '.txt'
-		st.download_button('Download Call Notes', Notes_final_ans, file_name=file_actual_name, type="primary")
-		st.stop()
-
-string_transcript_audio=''
-
+# Check if the chosen source type is 'audio'.
 if file_type == 'audio':
-	if uploaded_file is not None and len(uploaded_file)!=0:
+    # Check if audio file(s) are uploaded.
+    if uploaded_file is not None and len(uploaded_file) != 0:
+        # Process the audio file using the Whisper ASR model and extract the transcript.
+        t_list, string_transcript_audio = audio_processor_whisper(uploaded_file[0], max_len, string_transcript_audio, language_input_value, prompt_input_value, temperature_input_value)
 
-		t_list, string_transcript_audio = audio_processor_whisper(uploaded_file[0], max_len, string_transcript_audio, language_input_value, prompt_input_value, temperature_input_value)
+        # Set the desired file name for downloading the audio transcript.
+        file_transcript_actual_name = file_title + '_transcript.txt'
+        # Create a download button for the audio transcript.
+        st.download_button('Download Transcript', string_transcript_audio, file_name=file_transcript_actual_name)
 
-		file_transcript_actual_name = file_title + '_transcript.txt'
-		st.download_button('Download Transcript', string_transcript_audio, file_name=file_transcript_actual_name)
+        # Check the selected operation option for note-making.
+        if operation_option == "General Note Making":
+            # Generate notes using the extracted transcript.
+            Notes_final_ans = Note_maker(model_option, t_list, st.secrets["openai_key"], prompt_option, prompt_area_text, context_file_contents)
+        elif operation_option == "Custom Topic Input":
+            # Generate notes for each topic using the extracted transcript.
+            Notes_final_ans = Multi_Custom_Note_maker(uploaded_file, model_option, [string_transcript_audio], st.secrets["openai_key"], topics_input_list, prompt_option, prompt_area_text)
 
-		if operation_option == "General Note Making":
-			Notes_final_ans = Note_maker(model_option, t_list, st.secrets["openai_key"], prompt_option, prompt_area_text, context_file_contents)
-		elif operation_option == "Custom Topic Input":
-			Notes_final_ans = Multi_Custom_Note_maker(uploaded_file, model_option, [string_transcript_audio], st.secrets["openai_key"], topics_input_list, prompt_option, prompt_area_text)
+        # Set the desired file name for downloading the call notes.
+        file_actual_name = file_title + '.txt'
+        # Create a download button for the generated call notes.
+        st.download_button('Download Call Notes', Notes_final_ans, file_name=file_actual_name, type="primary")    
+        # Stop the execution to avoid further display of Streamlit app content.
+        st.stop()
 
-		file_actual_name = file_title + '.txt'
-		st.download_button('Download Call Notes', Notes_final_ans, file_name=file_actual_name, type="primary")	
-		st.stop()
-
+# Check if the chosen source type is 'gdrive link(public access)'.
 if file_type == 'gdrive link(public access)':
-	if link_input:
-		t_list, string_transcript_audio = audio_processor_audiogest(link_input_value, max_len, string_transcript_audio, language_input_value, prompt_input_value, num_speakers_input_value, wait_time_input_value)
+    # Check if the Google Drive public access link is provided.
+    if link_input:
+        # Process the audio from the provided Google Drive link using the Audiogest ASR model and extract the transcript.
+        t_list, string_transcript_audio = audio_processor_audiogest(link_input_value, max_len, string_transcript_audio, language_input_value, prompt_input_value, num_speakers_input_value, wait_time_input_value)
 
-		file_transcript_actual_name = file_title + '_transcript.txt'
-		st.download_button('Download Transcript', string_transcript_audio, file_name=file_transcript_actual_name)
+        # Set the desired file name for downloading the audio transcript.
+        file_transcript_actual_name = file_title + '_transcript.txt'
+        # Create a download button for the audio transcript.
+        st.download_button('Download Transcript', string_transcript_audio, file_name=file_transcript_actual_name)
 
-		if operation_option == "General Note Making":
-			Notes_final_ans = Note_maker(model_option, t_list, st.secrets["openai_key"], prompt_option, prompt_area_text, context_file_contents)
-		elif operation_option == "Custom Topic Input":
-			Notes_final_ans = Multi_Custom_Note_maker(uploaded_file, model_option, [string_transcript_audio], st.secrets["openai_key"], topics_input_list, prompt_option, prompt_area_text)
+        # Check the selected operation option for note-making.
+        if operation_option == "General Note Making":
+            # Generate notes using the extracted transcript.
+            Notes_final_ans = Note_maker(model_option, t_list, st.secrets["openai_key"], prompt_option, prompt_area_text, context_file_contents)
+        elif operation_option == "Custom Topic Input":
+            # Generate notes for each topic using the extracted transcript.
+            Notes_final_ans = Multi_Custom_Note_maker(uploaded_file, model_option, [string_transcript_audio], st.secrets["openai_key"], topics_input_list, prompt_option, prompt_area_text)
 
-		file_actual_name = file_title + '.txt'
-		st.download_button('Download Call Notes', Notes_final_ans, file_name=file_actual_name, type="primary")	
-		st.stop()
+        # Set the desired file name for downloading the call notes.
+        file_actual_name = file_title + '.txt'
+        # Create a download button for the generated call notes.
+        st.download_button('Download Call Notes', Notes_final_ans, file_name=file_actual_name, type="primary")    
+        # Stop the execution to avoid further display of Streamlit app content.
+        st.stop()
+
