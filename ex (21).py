@@ -1,18 +1,40 @@
+# Import necessary libraries
+
+# Streamlit is a Python library for creating web applications with minimal effort.
 import streamlit as st
+
+# PyPDF2 is a library for working with PDF files, such as reading and manipulating their content.
 import PyPDF2
+
+# BytesIO is a class from the io module that provides a way to work with in-memory binary data as if it were a file.
 from io import BytesIO
+
+# OpenAI is a platform that provides powerful natural language processing APIs. (Note: It seems like the 'openai' library is imported but not used in the provided code snippet.)
 import openai
+
+# pydub is a library for audio file manipulation (Note: It seems like the 'pydub' library is imported but not used in the provided code snippet.)
 import pydub
+
+# requests is a library for making HTTP requests.
 import requests
+
+# json is a standard library for working with JSON data.
 import json
+
+# time is a standard library for working with time-related functions.
 import time
+
+# re is a regular expression library for pattern matching in strings.
 import re
 
+# Set Streamlit page configuration
 st.set_page_config(
     page_title="NoteMaker",
     page_icon=":bookmark_tabs:",
 )
 
+# Create sidebar with useful prompt
+st.sidebar.markdown("App made by Arun :heart:")
 st.sidebar.markdown("# Useful Prompts")
 
 st.sidebar.markdown("### General Note Making")
@@ -24,93 +46,132 @@ st.sidebar.markdown("- Generate detailed call notes of the conversation for an i
 st.sidebar.markdown("### Misc")
 st.sidebar.markdown("- Please revise the following text by eliminating any repetitive information and clubbing similar topics under common headings. Ensure that each heading is followed by its relevant points. Do not rewrite any point or make them smaller. Avoid using bold formatting and numbering for the headings.")
 
+# Create sidebar with useful prompt
 st.markdown('# Hello User!')
 
+# User selects the source type (pdf, audio, or gdrive link) using a dropdown select box.
 file_type = st.selectbox(
     'Choose source type [pdf, audio, audiogest-link]:',
-    ('pdf', 'audio', 'gdrive link(public access)'))
+    ('pdf', 'audio', 'gdrive link(public access)')
+)
 
+# If the selected source type is 'gdrive link(public access)', user is prompted to enter the Google Drive public access link.
 link_input = st.text_input('Enter the google drive public access link of the file here(if you have chosen "gdrive link(public access)" in the previous question):')
 link_input_value = ''
 if link_input:
-	link_input_value = link_input
+    link_input_value = link_input
 
+# Settings for Audiogest/Whisper are provided in an expandable section.
 with st.expander('Whisper/Audiogest Settings', expanded=False):
-	language_input = st.text_input('Enter the language of the audio in "ISO-639-1" format {english = en, hindi = hi}:', value='en')
-	prompt_input = st.text_area('Enter your custom prompt which may contain factual words present in the audio:')
-	temperature_input = st.number_input("Enter a number between [0,1] for temperature value:", value=0.3)
-	num_speakers_input = st.number_input("Enter the number of speakers including the interviewer(for audiogest):", value=2)
-	wait_time_input = st.number_input("Enter the time(in minutes) to wait for audiogest transcription:", value=10)	
+    # User is prompted to enter the language of the audio in ISO-639-1 format.
+    language_input = st.text_input('Enter the language of the audio in "ISO-639-1" format {english = en, hindi = hi}:', value='en')
+    
+    # User is prompted to enter a custom prompt containing factual words present in the audio.
+    prompt_input = st.text_area('Enter your custom prompt which may contain factual words present in the audio:')
+    
+    # User is prompted to enter a number between 0 and 1 for the temperature value.
+    temperature_input = st.number_input("Enter a number between [0,1] for temperature value:", value=0.3)
+    
+    # User is prompted to enter the number of speakers, including the interviewer (for audiogest).
+    num_speakers_input = st.number_input("Enter the number of speakers including the interviewer(for audiogest):", value=2)
+    
+    # User is prompted to enter the time to wait for audiogest transcription (in minutes).
+    wait_time_input = st.number_input("Enter the time(in minutes) to wait for audiogest transcription:", value=10)
 
+# Setting default values for the inputs in case the user does not provide any value.
 language_input_value='en'
 if language_input:
-	language_input_value = language_input
+    language_input_value = language_input
 
 prompt_input_value=''
 if prompt_input:
-	prompt_input_value = prompt_input
+    prompt_input_value = prompt_input
 
 temperature_input_value=0.3
 if temperature_input:
-	temperature_input_value = temperature_input
+    temperature_input_value = temperature_input
 
 num_speakers_input_value=2
 if num_speakers_input:
-	num_speakers_input_value = num_speakers_input
+    num_speakers_input_value = num_speakers_input
 
 wait_time_input_value=10
 if wait_time_input:
-	wait_time_input_value = wait_time_input
+    wait_time_input_value = wait_time_input
 
+
+# GPT parameters are provided in an expandable section.
 with st.expander('GPT parameters', expanded=False):
-	temperature_input_GPT = st.number_input("Enter a number between [0,2] for temperature value of GPT Note Making:", value=1.5)
-	top_p_input_GPT = st.number_input("Enter the 'Top p' input value of GPT Note Making:", value=0.6)
-	frequency_penalty_GPT = st.number_input("Enter the 'frequency_penalty' input value of GPT Note Making:", value=0.1)
-	presence_penalty_GPT = st.number_input("Enter the 'presence_penalty' input value of GPT Note Making:", value=0.1)
-	context_file = st.file_uploader("[optional] Context PDF file:", type=["pdf"], accept_multiple_files=False)
-	model_option = st.selectbox(
-    'Which model would you like to use?',
-    ('gpt-4-1106-preview', 'gpt-4', 'gpt-3.5-turbo-1106'))
+    # User is prompted to enter a number between 0 and 2 for the temperature value of GPT Note Making.
+    temperature_input_GPT = st.number_input("Enter a number between [0,2] for temperature value of GPT Note Making:", value=1.5)
+    
+    # User is prompted to enter the 'Top p' input value for GPT Note Making.
+    top_p_input_GPT = st.number_input("Enter the 'Top p' input value of GPT Note Making:", value=0.6)
+    
+    # User is prompted to enter the 'frequency_penalty' input value for GPT Note Making.
+    frequency_penalty_GPT = st.number_input("Enter the 'frequency_penalty' input value of GPT Note Making:", value=0.1)
+    
+    # User is prompted to enter the 'presence_penalty' input value for GPT Note Making.
+    presence_penalty_GPT = st.number_input("Enter the 'presence_penalty' input value of GPT Note Making:", value=0.1)
+    
+    # User can optionally upload a context PDF file.
+    context_file = st.file_uploader("[optional] Context PDF file:", type=["pdf"], accept_multiple_files=False)
+    
+    # User selects the GPT model to use from a dropdown select box.
+    model_option = st.selectbox(
+        'Which model would you like to use?',
+        ('gpt-4-1106-preview', 'gpt-4', 'gpt-3.5-turbo-1106')
+    )
 
+# Setting default values for GPT parameters in case the user does not provide any value.
 temperature_input_GPT_value=1.5
 if temperature_input_GPT:
-	temperature_input_GPT_value = temperature_input_GPT
+    temperature_input_GPT_value = temperature_input_GPT
 
 top_p_input_GPT_value=0.6
 if top_p_input_GPT:
-	top_p_input_GPT_value = top_p_input_GPT
+    top_p_input_GPT_value = top_p_input_GPT
 
 frequency_penalty_GPT_value=0.1
 if frequency_penalty_GPT:
-	frequency_penalty_GPT_value = frequency_penalty_GPT
+    frequency_penalty_GPT_value = frequency_penalty_GPT
 
 presence_penalty_GPT_value=0.1
 if presence_penalty_GPT:
-	presence_penalty_GPT_value = presence_penalty_GPT
+    presence_penalty_GPT_value = presence_penalty_GPT
 
+# User is prompted to enter the chunk size (max_len) for processing.
 max_len_str = st.text_input('Chunk size :red[[required]] :')
 if max_len_str:
-	max_len = int(max_len_str)
+    max_len = int(max_len_str)
 
+# User is prompted to enter a title for the file.
 file_title = st.text_input('File title:')
 if file_title:
-	pass
+    pass
 else:
-	file_title = 'place_holder_for_file_name'
+    # If no file title is provided, a placeholder is used.
+    file_title = 'place_holder_for_file_name'
 
+# If a context file is uploaded, its contents are extracted for further processing.
 if context_file:
-	context_file_contents = ''
-	
-	reader = PyPDF2.PdfReader(context_file)
-			
-	for j in range(len(reader.pages)):    
-		p = reader.pages[j]
-		t = p.extract_text()
-			
-		context_file_contents = context_file_contents + "\n" + t
+    context_file_contents = ''
+    
+    # Using PyPDF2 to read the content of the PDF file page by page.
+    reader = PyPDF2.PdfReader(context_file)
+    
+    # Loop through each page and extract text content.
+    for j in range(len(reader.pages)):
+        p = reader.pages[j]
+        t = p.extract_text()
+        
+        # Append the extracted text to the context_file_contents.
+        context_file_contents = context_file_contents + "\n" + t
 
 else:
-	context_file_contents = ''
+    # If no context file is uploaded, an empty string is assigned to context_file_contents.
+    context_file_contents = ''
+
 
 operation_option = st.selectbox(
     'Which operation do you want to perform?',
@@ -120,268 +181,322 @@ topic_input_file = st.file_uploader("Choose a :red[PDF file containing the topic
 
 user_prompt_input = st.text_input('Enter the comma seperated topics in 1 line (If you have chosen "custom topic input"):')
 
+# If a topic input file is provided, read its content and extract topics from it.
 if topic_input_file:
-	input_text = ''
-	
-	reader = PyPDF2.PdfReader(topic_input_file)
-			
-	for j in range(len(reader.pages)):    
-		p = reader.pages[j]
-		t = p.extract_text()
-			
-		input_text = input_text + "\n" + t
+    input_text = ''
+    
+    # Using PyPDF2 to read the content of the PDF file page by page.
+    reader = PyPDF2.PdfReader(topic_input_file)
+    
+    # Loop through each page and extract text content.
+    for j in range(len(reader.pages)):
+        p = reader.pages[j]
+        t = p.extract_text()
+        
+        # Append the extracted text to the input_text.
+        input_text = input_text + "\n" + t
 
-	topics_input_list = [i.strip().replace('\n','') for i in input_text.split('\n \n')]
+    # Split the input text into a list of topics, removing extra spaces and newlines.
+    topics_input_list = [i.strip().replace('\n','') for i in input_text.split('\n \n')]
 
+# If user provides a custom prompt directly, split it into a list of topics.
 elif user_prompt_input:
-	topics_input_list = [i.strip() for i in user_prompt_input.split(',')]
+    topics_input_list = [i.strip() for i in user_prompt_input.split(',')]
 
+# Default prompt text for the prompt area.
+prompt_area_default_text = "Generate detailed call notes of the conversation for an investment firm.\nGenerate notes pointwise with full sentences under each of all the Important Sections, (Convert all text numbers to numbers, Include all important information and numbers.)\n"
 
-prompt_area_default_text="Generate detailed call notes of the conversation for an investment firm.\nGenerate notes pointwise with full sentences under each of all the Important Sections, (Convert all text numbers to numbers, Include all important information and numbers.)\n"
+# Initialize prompt_area_text with the default prompt.
 prompt_area_text=''
-if operation_option:
-	if operation_option=='General Note Making':
-		prompt_area_default_text = "Generate detailed call notes of the conversation for an investment firm.\nGenerate notes pointwise with full sentences under each of all the Important Sections, (Convert all text numbers to numbers, Include all important information and numbers.)\n"
-	elif operation_option=='Custom Topic Input':
-		prompt_area_default_text = "Generate detailed call notes of the conversation for an investment firm only under this topic-{'<topic>'}. Do not create any subtopics under the topics. Generate notes pointwise under only that topic, (Convert all text numbers to numbers)"
 
+# If an operation_option is provided, update the prompt_area_default_text based on the selected operation.
+if operation_option:
+    if operation_option=='General Note Making':
+        prompt_area_default_text = "Generate detailed call notes of the conversation for an investment firm.\nGenerate notes pointwise with full sentences under each of all the Important Sections, (Convert all text numbers to numbers, Include all important information and numbers.)\n"
+    elif operation_option=='Custom Topic Input':
+        prompt_area_default_text = "Generate detailed call notes of the conversation for an investment firm only under this topic-{'<topic>'}. Do not create any subtopics under the topics. Generate notes pointwise under only that topic, (Convert all text numbers to numbers)"
+
+# Set prompt_area_text to the default or updated prompt text.
 prompt_area_text = st.text_area("This is the default prompt. If you modify the prompt, please choose 'Use customized prompt' in the next question_____ :red[DO NOT REMOVE THE <topic> PART OF THE PROMPT IN Custom Topic Input]", value=prompt_area_default_text)
 
+# User selects whether to use the default prompt or a customized prompt.
 prompt_option = st.selectbox(
     ':red[Do you want to use the customized prompt ?]',
     ('Use default prompt', 'Use customized prompt'))
 
+# User uploads a PDF/Audio file.
 uploaded_file = st.file_uploader("Choose a PDF/Audio file:", type=["pdf","mp3","mp4","m4a","wav"], accept_multiple_files=True)
 
 
 
+# Function for generating notes using OpenAI GPT based on user input and parameters.
 def Note_maker(model_option, t_list, api_key, prompt_option, prompt_area_text, context_file_contents):
-	client = openai.OpenAI(api_key=api_key)
-	st.write('[Note Making] Progress update:','\n')
-	st.write(1,'/',len(t_list),'\n')
+    # Initialize OpenAI API client with the provided API key.
+    client = openai.OpenAI(api_key=api_key)
+    
+    # Display progress update in the Streamlit app.
+    st.write('[Note Making] Progress update:','\n')
+    st.write(1,'/',len(t_list),'\n')
+
+    # Determine the actual prompt based on user's choice.
+    if prompt_option == "Use default prompt":
+        actual_prompt = "Generate detailed call notes of the conversation for an investment firm.\nGenerate notes pointwise with full sentences under each of all the Important Sections, (Convert all text numbers to numbers, Include all important information and numbers.)\n"
+    elif prompt_option == "Use customized prompt":
+        actual_prompt = prompt_area_text
+
+    # Initialize a list of messages with system and user prompts for the first topic in t_list.
+    message_list = [
+        {
+          "role": "system",
+          "content": actual_prompt
+        },
+        {
+          "role": "user",
+          "content": t_list[0]
+        }
+    ]
+    
+    # Create GPT completions for the first topic.
+    response = client.chat.completions.create(
+        model=model_option,
+        messages=message_list,
+        temperature=temperature_input_GPT_value,
+        max_tokens=4096,
+        top_p=top_p_input_GPT_value,
+        frequency_penalty=frequency_penalty_GPT_value,
+        presence_penalty=presence_penalty_GPT_value
+    )
+    
+    # Initialize an empty list to store notes.
+    Notes = []
+    
+    # Loop through the rest of the topics in t_list.
+    for i in range(1, len(t_list)):
+        st.write(i + 1, '/', len(t_list), '\n')
+        
+        # Append the generated note for the current topic to the Notes list.
+        Notes.append(response.choices[0].message.content)
+
+        # Update the message_list for the next GPT completion.
+        if (model_option == 'gpt-3.5-turbo-1106') or (model_option == 'gpt-4'):
+            try:
+                del message_list[2:4]
+            except:
+                pass
+        elif (model_option == 'gpt-4-1106-preview'):
+            try:
+                if len(message_list) >= 8:
+                    del message_list[2:4]
+            except:
+                pass
+
+        # Append assistant's response to message_list, including context_file_contents and user's input for the next topic.
+        message_list.append({
+            "role": "assistant",
+            "content": context_file_contents + response.choices[0].message.content
+        })
+        
+        # Prepare the continuation of the transcript for the next topic.
+        stock = "This is continuation of the transcript.\nGenerate call notes pointwise for an investment firm under each of all the Important Sections, (Convert all text numbers to numbers, Include all important information and numbers.)\n"
+        cont = stock + t_list[i]
+        
+        # Append user's input for the next topic to message_list.
+        message_list.append({
+            "role": "user",
+            "content": cont
+        })
+        
+        # Create GPT completions for the next topic.
+        response = client.chat.completions.create(
+            model=model_option,
+            messages=message_list,
+            temperature=temperature_input_GPT_value,
+            max_tokens=4096,
+            top_p=top_p_input_GPT_value,
+            frequency_penalty=frequency_penalty_GPT_value,
+            presence_penalty=presence_penalty_GPT_value
+        )
+    
+    # Append the note for the last topic to the Notes list.
+    Notes.append(response.choices[0].message.content)
+
+    # Concatenate all the generated notes into a single string.
+    Notes_Final = ''
+    for i in Notes:
+        Notes_Final = Notes_Final + i + '\n\n'
+
+    # Display completion message in the Streamlit app.
+    st.write('Process done!','\n')
+    
+    # Return the final notes.
+    return Notes_Final
+
+# An Experiment
+# def Custom_Note_maker(model_option, t_list, api_key, user_prompt_input, prompt_option, prompt_area_text):
+# 	client = openai.OpenAI(api_key=api_key)
+# 	st.write('[Custom Input Note Making] Progress update:','\n')
+# 	Notes = []
 	
-	if prompt_option=="Use default prompt":
-		actual_prompt = "Generate detailed call notes of the conversation for an investment firm.\nGenerate notes pointwise with full sentences under each of all the Important Sections, (Convert all text numbers to numbers, Include all important information and numbers.)\n"
-	elif prompt_option=="Use customized prompt":
-		actual_prompt = prompt_area_text
-	
-	message_list = [
-	    {
-	      "role": "system",
-	      "content": actual_prompt
-	    },
-	    {
-	      "role": "user",
-	      "content": t_list[0]
-	    }
-	  ]
-	
-	response = client.chat.completions.create(
-	  model=model_option,
-	  messages=message_list,
-	  temperature=temperature_input_GPT_value,
-	  max_tokens=4096,
-	  top_p=top_p_input_GPT_value,
-	  frequency_penalty=frequency_penalty_GPT_value,
-	  presence_penalty=presence_penalty_GPT_value
-	)
-	
-	Notes = []
-	
-	for i in range(1,len(t_list)):
+# 	for i in range(len(t_list)):
+# 		st.write(i+1,'/',len(t_list),'\n')
+
+# 		if prompt_option=="Use default prompt":
+# 			actual_prompt = "Generate detailed call notes of the conversation for an investment firm only under these topics-{"+user_prompt_input+"}.\nGenerate notes pointwise under only those topics, (Convert all text numbers to numbers)"
+# 		elif prompt_option=="Use customized prompt":
+# 			actual_prompt = prompt_area_text
 		
-		st.write(i+1,'/',len(t_list),'\n')
+# 		message_list = [
+# 		{
+# 		  "role": "system",
+# 		  "content": actual_prompt
+# 		},
+# 		{
+# 		  "role": "user",
+# 		  "content": 'Notes: \n'+t_list[i]
+# 		}
+# 		]
 		
-		Notes.append(response.choices[0].message.content)
-
-		if (model_option=='gpt-3.5-turbo-1106') or (model_option=='gpt-4'):
-			try:
-				del message_list[2:4]
-			except:
-				pass
-		elif (model_option=='gpt-4-1106-preview'):
-			try:
-				if len(message_list)>=8:
-					del message_list[2:4]
-			except:
-				pass
+# 		response = client.chat.completions.create(
+# 		model='gpt-4-1106-preview',
+# 		messages=message_list,
+# 		temperature=temperature_input_GPT_value,
+# 		max_tokens=4096,
+# 		top_p=top_p_input_GPT_value,
+# 		frequency_penalty=frequency_penalty_GPT_value,
+# 		presence_penalty=presence_penalty_GPT_value
+# 		)
 		
-		message_list.append({
-		      "role": "assistant",
-		      "content": context_file_contents + response.choices[0].message.content
-		    })
-	    
-		stock = "This is continuation of the transcript.\nGenerate call notes pointwise for an investment firm under each of all the Important Sections, (Convert all text numbers to numbers, Include all important information and numbers.)\n"
-		cont = stock + t_list[i]
-	    
-		message_list.append({
-		      "role": "user",
-		      "content": cont
-		    })
-	    
-		response = client.chat.completions.create(
-		      model=model_option,
-		      messages=message_list,
-		      temperature=temperature_input_GPT_value,
-		      max_tokens=4096,
-		      top_p=top_p_input_GPT_value,
-		      frequency_penalty=frequency_penalty_GPT_value,
-		      presence_penalty=presence_penalty_GPT_value
-		    )
-	    
-	Notes.append(response.choices[0].message.content)
+# 		Notes.append(response.choices[0].message.content)
 
-	Notes_Final = ''
-
-	for i in Notes:
-		Notes_Final = Notes_Final + i + '\n\n'
-
-	st.write('Process done!','\n')
-	return Notes_Final
-
-def Custom_Note_maker(model_option, t_list, api_key, user_prompt_input, prompt_option, prompt_area_text):
-	client = openai.OpenAI(api_key=api_key)
-	st.write('[Custom Input Note Making] Progress update:','\n')
-	Notes = []
+# 	topics = [i.strip() for i in user_prompt_input.split(',')]
 	
-	for i in range(len(t_list)):
-		st.write(i+1,'/',len(t_list),'\n')
-
-		if prompt_option=="Use default prompt":
-			actual_prompt = "Generate detailed call notes of the conversation for an investment firm only under these topics-{"+user_prompt_input+"}.\nGenerate notes pointwise under only those topics, (Convert all text numbers to numbers)"
-		elif prompt_option=="Use customized prompt":
-			actual_prompt = prompt_area_text
-		
-		message_list = [
-		{
-		  "role": "system",
-		  "content": actual_prompt
-		},
-		{
-		  "role": "user",
-		  "content": 'Notes: \n'+t_list[i]
-		}
-		]
-		
-		response = client.chat.completions.create(
-		model='gpt-4-1106-preview',
-		messages=message_list,
-		temperature=temperature_input_GPT_value,
-		max_tokens=4096,
-		top_p=top_p_input_GPT_value,
-		frequency_penalty=frequency_penalty_GPT_value,
-		presence_penalty=presence_penalty_GPT_value
-		)
-		
-		Notes.append(response.choices[0].message.content)
-
-	topics = [i.strip() for i in user_prompt_input.split(',')]
+# 	topics_names = [s.replace(' ', '_') for s in topics]
 	
-	topics_names = [s.replace(' ', '_') for s in topics]
+# 	for j in range(len(topics)):
+# 		globals()[topics_names[j]+"_items"] = ''
 	
-	for j in range(len(topics)):
-		globals()[topics_names[j]+"_items"] = ''
-	
-	for i in range(len(Notes)):
-		ex = [i.strip() for i in Notes[i].strip().split('\n\n')]
-		if len(ex)>=len(topics):
-			for j in range(len(topics)):
-				globals()[topics_names[j]+"_items"] = globals()[topics_names[j]+"_items"] + ex[j]
+# 	for i in range(len(Notes)):
+# 		ex = [i.strip() for i in Notes[i].strip().split('\n\n')]
+# 		if len(ex)>=len(topics):
+# 			for j in range(len(topics)):
+# 				globals()[topics_names[j]+"_items"] = globals()[topics_names[j]+"_items"] + ex[j]
 		    
-	Custom_notes = ''
+# 	Custom_notes = ''
 	
-	for j in range(len(topics)):
-		Custom_notes = Custom_notes + globals()[topics_names[j]+"_items"] + '\n\n'
+# 	for j in range(len(topics)):
+# 		Custom_notes = Custom_notes + globals()[topics_names[j]+"_items"] + '\n\n'
 
-	return Custom_notes
+# 	return Custom_notes
 
+# Function for generating notes for multiple uploaded files using OpenAI GPT based on user input and parameters.
 def Multi_Note_maker(uploaded_file, model_option, t_list, api_key, prompt_option, prompt_area_text, context_file_contents):
-	client = openai.OpenAI(api_key=api_key)
-	Notes_Final_Final = ''
-	for j in range(len(t_list)):
-		st.write(f'[Note Making {j+1}] Progress update:','\n')
-		st.write(1,'/',len(t_list[j]),'\n')
-		
-		if prompt_option=="Use default prompt":
-			actual_prompt = "Generate detailed call notes of the conversation for an investment firm.\nGenerate notes pointwise with full sentences under each of all the Important Sections, (Convert all text numbers to numbers, Include all important information and numbers.)\n"
-		elif prompt_option=="Use customized prompt":
-			actual_prompt = prompt_area_text
-		
-		message_list = [
-			{
-			"role": "system",
-			"content": actual_prompt
-			},
-			{
-			"role": "user",
-			"content": t_list[j][0]
-			}
-		]
-		
-		response = client.chat.completions.create(
-		model=model_option,
-		messages=message_list,
-		temperature=temperature_input_GPT_value,
-		max_tokens=4096,
-		top_p=top_p_input_GPT_value,
-		frequency_penalty=frequency_penalty_GPT_value,
-		presence_penalty=presence_penalty_GPT_value
-		)
-		
-		Notes = []
-		
-		for i in range(1,len(t_list[j])):
-			
-			st.write(i+1,'/',len(t_list[j]),'\n')
-			
-			Notes.append(response.choices[0].message.content)
+    # Initialize OpenAI API client with the provided API key.
+    client = openai.OpenAI(api_key=api_key)
+    
+    # Initialize an empty string to store the final notes for all uploaded files.
+    Notes_Final_Final = ''
+    
+    # Loop through each set of topics associated with each uploaded file.
+    for j in range(len(t_list)):
+        # Display progress update for each set of topics in the Streamlit app.
+        st.write(f'[Note Making {j+1}] Progress update:','\n')
+        st.write(1,'/',len(t_list[j]),'\n')
 
-			if (model_option=='gpt-3.5-turbo-1106') or (model_option=='gpt-4'):
-				try:
-					del message_list[2:4]
-				except:
-					pass
-			elif (model_option=='gpt-4-1106-preview'):
-				try:
-					if len(message_list)>=8:
-						del message_list[2:4]
-				except:
-					pass
-			
-			message_list.append({
-				"role": "assistant",
-				"content": context_file_contents + response.choices[0].message.content
-				})
-			
-			stock = "This is continuation of the transcript.\nGenerate call notes pointwise for an investment firm under each of all the Important Sections, (Convert all text numbers to numbers, Include all important information and numbers.)\n"
-			cont = stock + t_list[j][i]
-			
-			message_list.append({
-				"role": "user",
-				"content": cont
-				})
-			
-			response = client.chat.completions.create(
-				model=model_option,
-				messages=message_list,
-				temperature=temperature_input_GPT_value,
-				max_tokens=4096,
-				top_p=top_p_input_GPT_value,
-				frequency_penalty=frequency_penalty_GPT_value,
-				presence_penalty=presence_penalty_GPT_value
-				)
-			
-		Notes.append(response.choices[0].message.content)
+        # Determine the actual prompt based on user's choice.
+        if prompt_option == "Use default prompt":
+            actual_prompt = "Generate detailed call notes of the conversation for an investment firm.\nGenerate notes pointwise with full sentences under each of all the Important Sections, (Convert all text numbers to numbers, Include all important information and numbers.)\n"
+        elif prompt_option == "Use customized prompt":
+            actual_prompt = prompt_area_text
 
-		Notes_Final = ''
+        # Initialize a list of messages with system and user prompts for the first topic in t_list[j].
+        message_list = [
+            {
+            "role": "system",
+            "content": actual_prompt
+            },
+            {
+            "role": "user",
+            "content": t_list[j][0]
+            }
+        ]
+        
+        # Create GPT completions for the first topic in the current set.
+        response = client.chat.completions.create(
+            model=model_option,
+            messages=message_list,
+            temperature=temperature_input_GPT_value,
+            max_tokens=4096,
+            top_p=top_p_input_GPT_value,
+            frequency_penalty=frequency_penalty_GPT_value,
+            presence_penalty=presence_penalty_GPT_value
+        )
+        
+        # Initialize an empty list to store notes for the current set of topics.
+        Notes = []
+        
+        # Loop through the rest of the topics in t_list[j].
+        for i in range(1, len(t_list[j])):
+            st.write(i+1,'/',len(t_list[j]),'\n')
+            
+            # Append the generated note for the current topic to the Notes list.
+            Notes.append(response.choices[0].message.content)
 
-		for i in Notes:
-			Notes_Final = Notes_Final + i + '\n\n'
+            # Update the message_list for the next GPT completion.
+            if (model_option == 'gpt-3.5-turbo-1106') or (model_option == 'gpt-4'):
+                try:
+                    del message_list[2:4]
+                except:
+                    pass
+            elif (model_option == 'gpt-4-1106-preview'):
+                try:
+                    if len(message_list) >= 8:
+                        del message_list[2:4]
+                except:
+                    pass
 
-		Notes_Final_Final = Notes_Final_Final + uploaded_file[j].name + ' :\n' + Notes_Final + '\n\n\n'
-		
-	st.write('Process done!','\n')
-	return Notes_Final_Final
+            # Append assistant's response to message_list, including context_file_contents and user's input for the next topic.
+            message_list.append({
+                "role": "assistant",
+                "content": context_file_contents + response.choices[0].message.content
+            })
+            
+            # Prepare the continuation of the transcript for the next topic.
+            stock = "This is continuation of the transcript.\nGenerate call notes pointwise for an investment firm under each of all the Important Sections, (Convert all text numbers to numbers, Include all important information and numbers.)\n"
+            cont = stock + t_list[j][i]
+            
+            # Append user's input for the next topic to message_list.
+            message_list.append({
+                "role": "user",
+                "content": cont
+            })
+            
+            # Create GPT completions for the next topic in the current set.
+            response = client.chat.completions.create(
+                model=model_option,
+                messages=message_list,
+                temperature=temperature_input_GPT_value,
+                max_tokens=4096,
+                top_p=top_p_input_GPT_value,
+                frequency_penalty=frequency_penalty_GPT_value,
+                presence_penalty=presence_penalty_GPT_value
+            )
+        
+        # Append the note for the last topic in the current set to the Notes list.
+        Notes.append(response.choices[0].message.content)
+
+        # Concatenate all the generated notes for the current set into a single string.
+        Notes_Final = ''
+        for i in Notes:
+            Notes_Final = Notes_Final + i + '\n\n'
+
+        # Concatenate the notes for the current set with the file name and add to the final string.
+        Notes_Final_Final = Notes_Final_Final + uploaded_file[j].name + ' :\n' + Notes_Final + '\n\n\n'
+        
+    # Display completion message in the Streamlit app.
+    st.write('Process done!','\n')
+    
+    # Return the final notes for all uploaded files.
+    return Notes_Final_Final
 
 def Multi_Custom_Note_maker(uploaded_file, model_option, full_text, api_key, topics_input_list, prompt_option, prompt_area_text):
 	client = openai.OpenAI(api_key=api_key)
